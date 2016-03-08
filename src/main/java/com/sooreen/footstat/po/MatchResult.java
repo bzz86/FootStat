@@ -100,4 +100,36 @@ public class MatchResult {
     public void setScore2(String score2) {
         this.score2 = score2;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MatchResult that = (MatchResult) o;
+
+        if (champId != null ? !champId.equals(that.champId) : that.champId != null) return false;
+        if (gameDate != null ? !gameDate.equals(that.gameDate) : that.gameDate != null) return false;
+        if (leagueId != null ? !leagueId.equals(that.leagueId) : that.leagueId != null) return false;
+        if (score1 != null ? !score1.equals(that.score1) : that.score1 != null) return false;
+        if (score2 != null ? !score2.equals(that.score2) : that.score2 != null) return false;
+        if (seasonId != null ? !seasonId.equals(that.seasonId) : that.seasonId != null) return false;
+        if (team1 != null ? !team1.equals(that.team1) : that.team1 != null) return false;
+        if (team2 != null ? !team2.equals(that.team2) : that.team2 != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = champId != null ? champId.hashCode() : 0;
+        result = 31 * result + (leagueId != null ? leagueId.hashCode() : 0);
+        result = 31 * result + (seasonId != null ? seasonId.hashCode() : 0);
+        result = 31 * result + (gameDate != null ? gameDate.hashCode() : 0);
+        result = 31 * result + (team1 != null ? team1.hashCode() : 0);
+        result = 31 * result + (team2 != null ? team2.hashCode() : 0);
+        result = 31 * result + (score1 != null ? score1.hashCode() : 0);
+        result = 31 * result + (score2 != null ? score2.hashCode() : 0);
+        return result;
+    }
 }

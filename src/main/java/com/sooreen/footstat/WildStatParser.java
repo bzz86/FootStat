@@ -9,19 +9,22 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 public class WildStatParser extends AbstractStatParser{
-    private static final String BASE_URL = "http://wildstat.ru/p/%s/ch/%s_%s_%s/stg/all/tour/all";
-    private static final String INPUT_DATE_FORMAT = "dd.MM.yyyy";
-    private static final String OUTPUT_DATE_FORMAT = "yyyy-MM-dd";
-    private SimpleDateFormat inSdf = new SimpleDateFormat(INPUT_DATE_FORMAT);
-    private SimpleDateFormat outSdf = new SimpleDateFormat(OUTPUT_DATE_FORMAT);
-
     // http://wildstat.ru/p/2301/ch/ENG_1_2012_2013/stg/all/tour/last
     // http://wildstat.ru/p/2301/ch/ENG_1_2012_2013/stg/all/tour/all
+    private static final String BASE_URL = "http://wildstat.ru/p/%s/ch/%s_%s_%s/stg/all/tour/pld";
+    //private static final String UPDATE_URL = "http://wildstat.ru/p/%s/ch/%s_%s_%s/stg/all/tour/pld";
+    private static final String INPUT_DATE_FORMAT = "dd.MM.yyyy";
+    private static final String OUTPUT_DATE_FORMAT = "yyyy-MM-dd";
+    private static SimpleDateFormat inSdf = new SimpleDateFormat(INPUT_DATE_FORMAT);
+    private static SimpleDateFormat outSdf = new SimpleDateFormat(OUTPUT_DATE_FORMAT);
+
+    static{
+        inSdf.setTimeZone(TimeZone.getTimeZone("Europe/Moscow"));
+    }
+
 
     @Override
     public List<MatchResult> parseResults(List<Championate> champs) throws IOException {
@@ -62,10 +65,56 @@ public class WildStatParser extends AbstractStatParser{
         return results;
     }
 
+    public List<MatchResult> parseResults(List<Championate> champs, Date dateFrom) throws IOException {
+        ArrayList<MatchResult> results = new ArrayList<MatchResult>();
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(dateFrom);
+        int yearFrom = cal.get(Calendar.YEAR);
+
+
+        //loop over champs/leagues/seasons to get data
+        for(Championate champ : champs){
+            for(League league : champ.getLeagues()) {
+                for(Season season : champ.getSeasons()) {
+                    //select only last season
+                    if(season.getId().contains(String.valueOf(yearFrom))){
+                        Document doc = Jsoup.connect(
+                                            prepareUrl(champ.getId()/*+league.getId()*/,
+                                                    champ.getAbbr(),
+                                                    league.getId(),
+                                                    season.getId()
+                                        )).get();
+                        List<ResultLine> lines = parseDocument(doc);
+                        for(ResultLine line : lines) {
+                            //check date is after dateFrom
+                            if(line.getDate().after(dateFrom)){
+                                MatchResult matchResult = new MatchResult();
+                                matchResult.setChampId(champ.getId());
+                                matchResult.setChampName(champ.getName());
+                                matchResult.setGameDate(outSdf.format(line.getDate()));
+                                matchResult.setLeagueId(league.getId());
+                                matchResult.setLeagueName(league.getName());
+                                matchResult.setScore1(line.getScore1());
+                                matchResult.setScore2(line.getScore2());
+                                matchResult.setSeasonId(season.getId());
+                                matchResult.setSeasonName(season.getName());
+                                matchResult.setTeam1(line.getTeam1());
+                                matchResult.setTeam2(line.getTeam2());
+                                results.add(matchResult);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return results;
+    }
+
 
     @Override
     public String prepareUrl(String ... args) {
-        return String.format(BASE_URL, args);
+        return String.format(BASE_URL, (Object [])args);
     }
 
     @Override
