@@ -16,6 +16,7 @@ import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.xml.sax.SAXException;
 
@@ -29,9 +30,7 @@ import java.util.List;
 public class Main {
     private static List<Championate> champs = null;
     private static FinalResult fullResult;
-    //private static List<MatchResult> matchResults;
     private static List<MatchResult> recentMatchResults;
-    //private static Date lastUpdate = null;
 
     private static final String CHAMPS_FILE = "./config/championates.json";
     private static final String BIG_OUTPUT_FILE = "./data/output_big.json";
@@ -50,8 +49,6 @@ public class Main {
             System.out.println("1 - Load initial base");
             System.out.println("2 - Get updates");
             System.out.println("3 - Export to Excel");
-            //System.out.println("4 - Read config file");
-            //System.out.println("5 - Load results from big file");
             System.out.println("0 - Exit");
             System.out.print("\nSelect a Menu Option: ");
             try {
@@ -69,23 +66,6 @@ public class Main {
                         case 3:
                             exportToExcel();
                             break;
-                       /* case 4:
-                            init();*/
-                            /*try{
-                                champs = loadChampionatesConfig(CHAMPS_FILE);
-                            }catch(IOException e){
-                                URL configUrl = Main.class.getResource(CHAMPS_FILE);
-                                champs = loadChampionatesConfig(configUrl.getPath());
-                            }
-                            print(champs.size() + " championates loaded");*/
-                            /*for(Championate champ : champs){
-                                print(champ.getName());
-                            }*/
-                           /* break;
-                        case 5:
-                            fullResult = loadResultsFromFile(BIG_OUTPUT_FILE);
-                            recentMatchResults = loadResultsFromFile(RECENT_OUTPUT_FILE).getMatchResults();
-                            break;*/
                         case 0:
                             exit = true;
                             break;
@@ -165,10 +145,6 @@ public class Main {
             if(champs != null){
                 WildStatParser wsp = new WildStatParser();
                 List<MatchResult> results = wsp.parseResults(champs, dateFrom);
-                /*fullResult = new FinalResult();
-                fullResult.setLastUpdate(lastUpdate);
-                fullResult.setMatchResults(results);*/
-
                 List<MatchResult> recentResults = new ArrayList<MatchResult>();
                 List<MatchResult> fullResults = fullResult.getMatchResults();
                 //check if update not presented in full result
@@ -289,8 +265,6 @@ public class Main {
                     }
                 }
             }
-            //System.out.println("Error: root should be array: quiting.");
-            //return finalResult;
         }
 
         while (jp.nextToken() != JsonToken.END_ARRAY) {
@@ -318,9 +292,24 @@ public class Main {
             SXSSFWorkbook workbook = new SXSSFWorkbook(1000);
 
             //two sheets - full and recent results
+            createSheet(workbook, fullResults, "База целиком");
+            createSheet(workbook, recentResults, "Последние обновления");
 
-            //full results
-            Sheet sheet = workbook.createSheet("База целиком");
+            FileOutputStream outputStream = new FileOutputStream(xlsFile);
+            workbook.write(outputStream);
+            outputStream.flush();
+            outputStream.close();
+
+            workbook.dispose();
+        }else{
+            print("Please run 'Load initial base' first");
+        }
+    }
+
+    private static void createSheet(Workbook workbook, List<MatchResult> results, String sheetName){
+        if(results != null){
+
+            Sheet sheet = workbook.createSheet(sheetName);
 
             int rowCount = 0;
 
@@ -342,7 +331,7 @@ public class Main {
             POIHelper.createCell(row, columnCount++, "Счет 2", headerStyle);
 
 
-            for (MatchResult mr : fullResults) {
+            for (MatchResult mr : results) {
                 row = sheet.createRow(++rowCount);
 
                 columnCount = 0;
@@ -357,10 +346,8 @@ public class Main {
                     POIHelper.createCell(row, columnCount++, Integer.valueOf(mr.getScore1()));
                     POIHelper.createCell(row, columnCount++, Integer.valueOf(mr.getScore2()));
                 }catch (NumberFormatException e){
-                    print("Problem on a row %s of the full database", rowCount);
+                    print("Problem on a row %s of the \"$s\" sheet", rowCount, sheetName);
                 }
-
-                //if(rowCount > 10000) break;
             }
 
 
@@ -372,64 +359,6 @@ public class Main {
             sheet.autoSizeColumn(5);
             sheet.autoSizeColumn(6);
             sheet.autoSizeColumn(7);
-
-
-            //recent results
-            if(recentResults != null) {
-                sheet = workbook.createSheet("Последние обновления");
-
-                rowCount = 0;
-                row = sheet.createRow(rowCount);
-                columnCount = 0;
-
-                POIHelper.createCell(row, columnCount++, "Чемпионат", headerStyle);
-                POIHelper.createCell(row, columnCount++, "Лига", headerStyle);
-                POIHelper.createCell(row, columnCount++, "Сезон", headerStyle);
-                POIHelper.createCell(row, columnCount++, "Дата игры", headerStyle);
-                POIHelper.createCell(row, columnCount++, "Команда 1", headerStyle);
-                POIHelper.createCell(row, columnCount++, "Команда 2", headerStyle);
-                POIHelper.createCell(row, columnCount++, "Счет 1", headerStyle);
-                POIHelper.createCell(row, columnCount++, "Счет 2", headerStyle);
-
-
-                for (MatchResult mr : recentResults) {
-                    row = sheet.createRow(++rowCount);
-
-                    columnCount = 0;
-
-                    POIHelper.createCell(row, columnCount++, mr.getChampName());
-                    POIHelper.createCell(row, columnCount++, mr.getLeagueName());
-                    POIHelper.createCell(row, columnCount++, mr.getSeasonName());
-                    POIHelper.createCell(row, columnCount++, mr.getGameDate());
-                    POIHelper.createCell(row, columnCount++, mr.getTeam1());
-                    POIHelper.createCell(row, columnCount++, mr.getTeam2());
-                    try {
-                        POIHelper.createCell(row, columnCount++, Integer.valueOf(mr.getScore1()));
-                        POIHelper.createCell(row, columnCount++, Integer.valueOf(mr.getScore2()));
-                    }catch (NumberFormatException e){
-                        print("Problem on a row %s of the recent matches", rowCount);
-                    }
-                }
-
-
-                sheet.autoSizeColumn(0);
-                sheet.autoSizeColumn(1);
-                sheet.autoSizeColumn(2);
-                sheet.autoSizeColumn(3);
-                sheet.autoSizeColumn(4);
-                sheet.autoSizeColumn(5);
-                sheet.autoSizeColumn(6);
-                sheet.autoSizeColumn(7);
-            }
-
-            FileOutputStream outputStream = new FileOutputStream(xlsFile);
-            workbook.write(outputStream);
-            outputStream.flush();
-            outputStream.close();
-
-            workbook.dispose();
-        }else{
-            print("Please run 'Load initial base' first");
         }
     }
 

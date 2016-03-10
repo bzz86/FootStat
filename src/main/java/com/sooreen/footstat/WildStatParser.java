@@ -41,7 +41,9 @@ public class WildStatParser extends AbstractStatParser{
                                                 champ.getAbbr(),
                                                 league.getId(),
                                                 season.getId()
-                                    )).get();
+                                    ))
+                                    .timeout(10000)
+                                    .get();
                     List<ResultLine> lines = parseDocument(doc);
                     for(ResultLine line : lines) {
                         MatchResult matchResult = new MatchResult();
@@ -83,7 +85,9 @@ public class WildStatParser extends AbstractStatParser{
                                                     champ.getAbbr(),
                                                     league.getId(),
                                                     season.getId()
-                                        )).get();
+                                        ))
+                                        .timeout(10000)
+                                        .get();
                         List<ResultLine> lines = parseDocument(doc);
                         for(ResultLine line : lines) {
                             //check date is after dateFrom
@@ -122,7 +126,7 @@ public class WildStatParser extends AbstractStatParser{
         ArrayList<ResultLine> results = new ArrayList<ResultLine>();
 
 
-        Elements resultRows = doc.select("table.championship > tbody > tr:nth-child(2n+1)");
+        Elements resultRows = doc.select("table.championship > tbody > tr");             /*:nth-child(2n+1)*/
         //http://wildstat.ru/p/2001/ch/RUS_1_2012_2013/stg/all/tour/all
         if (resultRows != null) {
             for (Element result : resultRows) {
